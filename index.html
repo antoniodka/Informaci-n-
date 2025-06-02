@@ -167,7 +167,7 @@ __*   TERMO PARA LIQUIDO`.split(/\n+/);
     const request = indexedDB.open(dbName, 1);
     request.onupgradeneeded = function(e) {
       db = e.target.result;
-      db.createObjectStore("items1", { keyPath: "item1" });
+      db.createObjectStore("items", { keyPath: "item" });
     };
     request.onsuccess = function(e) {
       db = e.target.result;
@@ -175,8 +175,8 @@ __*   TERMO PARA LIQUIDO`.split(/\n+/);
     };
 
     function renderItems() {
-      const tx = db.transaction("items1", "readonly");
-      const store = tx.objectStore("items1");
+      const tx = db.transaction("items", "readonly");
+      const store = tx.objectStore("items");
       const getAll = store.getAll();
       getAll.onsuccess = function() {
         const guardados = getAll.result.map(obj => obj.item);
