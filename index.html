@@ -10,6 +10,11 @@
       padding: 10px;
       margin: 0;
     }
+
+#contenedor > div.separador {
+  grid-column: 1 / -1;
+  height: 30px;
+}
     h2 {
       text-align: center;
       color: #003366;
@@ -75,66 +80,6 @@
 
 
 
-20 pasamanos.
-2 tablas de 60x60.
-Tarima transparente de 7x8 completa en aluminio.
-Todos los megabares.
-Todas la extensiónes.
-2 metalares.
-
-HERRAMIENTAS. ----------
-Taladro verde con punta
-Pulidora
-Maquina de soldar pequeña.
-Sierra.
-Tabla de más para cortar borde.
-
-4 Rack de puentes
-
-1 Rack de medios puentes.
-1 Rack de puentes mixtos
-1 Rack de medios puentes mixtos.
-12 Medias tablas negras.
-26 Tablas negras
-Acoples de tarima transparente.
-
-19 doble tablas.
-2 tablas negras sin marcos.
-
-12 laterales de 50cm
-
-Arandelas de auxiliares para subir nivel de puente mixto
-
-Agregado:
-14 laterales de 1m.
-30 flautas de 1m.
-2 pata solas de 1 metro.
-
-2 Escalera de 50cm
-3 pisos negros
-2 telas negras bonitas
-4 telas blancas para borde de pista de baile.
-4 tubos de carpas 10x6
-
-Pintura negra.
-Pintura plateada.
-2 Brochas.
-
-4 llantas de andamio.
-Acople de llantas para el techo.
-
-__ * tarima transparente de 7 X 4 modulos
-__ * 28 acrilicos ó modulos transparente
-__ * 67 laterales de alumino
-__ * 40 patas de aluminio
-__ * 40 flautas de patas de aluminio
-__ * 40 niveladores
-__ *  4 sacos de tablitas
-__ * 40 acoples totales( 18 centrales, 18 laterales, 4 esquineros)
-__ * 14 megabares
-__ * 14 cables AC
-__ * extensiones
-
 __* 4 secciones de techo de 23
 __* 10 patacerchas (6mtr)
 __* 20 unidades de cerchas V(revisar numeros)
@@ -168,6 +113,95 @@ __*   CINTA TRANSPARENTE
 __*   TERMO PARA LIQUIDO
 
 
+----------
+
+
+20 pasamanos.
+2 tablas de 60x60.
+Tarima transparente de 7x8 completa en aluminio.
+Todos los megabares.
+Todas la extensiónes.
+2 metalares.
+
+
+----------
+----------
+
+
+HERRAMIENTAS. 
+Taladro verde con punta
+Pulidora
+Maquina de soldar pequeña.
+Sierra.
+Tabla de más para cortar borde.
+
+4 Rack de puentes
+
+1 Rack de medios puentes.
+1 Rack de puentes mixtos
+1 Rack de medios puentes mixtos.
+12 Medias tablas negras.
+26 Tablas negras
+Acoples de tarima transparente.
+
+19 doble tablas.
+2 tablas negras sin marcos.
+
+12 laterales de 50cm
+
+Arandelas de auxiliares para subir nivel de puente mixto
+
+----------
+----------
+
+Agregado:
+14 laterales de 1m.
+30 flautas de 1m.
+2 pata solas de 1 metro.
+
+2 Escalera de 50cm
+3 pisos negros
+2 telas negras bonitas
+4 telas blancas para borde de pista de baile.
+4 tubos de carpas 10x6
+
+Pintura negra.
+Pintura plateada.
+2 Brochas.
+
+4 llantas de andamio.
+Acople de llantas para el techo.
+
+
+
+
+----------
+
+----------
+
+__ * tarima transparente de 7 X 4 modulos
+__ * 28 acrilicos ó modulos transparente
+__ * 67 laterales de alumino
+__ * 40 patas de aluminio
+__ * 40 flautas de patas de aluminio
+__ * 40 niveladores
+__ *  4 sacos de tablitas
+__ * 40 acoples totales( 18 centrales, 18 laterales, 4 esquineros)
+__ * 14 megabares
+__ * 14 cables AC
+__ * extensiones
+
+
+----------
+
+
+
+
+
+
+
+
+
 
 
 
@@ -192,32 +226,40 @@ __*   TERMO PARA LIQUIDO
     };
 
     function renderItems() {
-      const tx = db.transaction("items", "readonly");
-      const store = tx.objectStore("items");
-      const getAll = store.getAll();
-      getAll.onsuccess = function() {
-        const guardados = getAll.result.map(obj => obj.item);
-        const completados = getAll.result.filter(obj => obj.checked).map(obj => obj.item);
-        const items = [...new Set([...lista, ...guardados])];
+  const tx = db.transaction("items", "readonly");
+  const store = tx.objectStore("items");
+  const getAll = store.getAll();
+  getAll.onsuccess = function () {
+    const guardados = getAll.result.map(obj => obj.item);
+    const completados = getAll.result.filter(obj => obj.checked).map(obj => obj.item);
+    const items = [...new Set([...lista, ...guardados])];
 
-        const contenedor = document.getElementById("contenedor");
-        contenedor.innerHTML = "";
+    const contenedor = document.getElementById("contenedor");
+    contenedor.innerHTML = "";
 
-        items.forEach((item, index) => {
-          if (!item.trim()) return;
-          const div = document.createElement("label");
-          div.className = "item";
-          const chk = document.createElement("input");
-          chk.type = "checkbox";
-          chk.checked = completados.includes(item);
-          chk.onchange = () => guardar(item, chk.checked);
-          div.appendChild(chk);
-          div.append(" " + item);
-          contenedor.appendChild(div);
-        });
-      };
-    }
+    items.forEach((item) => {
+      const texto = item.trim();
+      if (!texto) return;
 
+      if (texto === "----------") {
+        const separador = document.createElement("div");
+        separador.className = "separador";
+        contenedor.appendChild(separador);
+        return;
+      }
+
+      const div = document.createElement("label");
+      div.className = "item";
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = completados.includes(item);
+      chk.onchange = () => guardar(item, chk.checked);
+      div.appendChild(chk);
+      div.append(" " + item);
+      contenedor.appendChild(div);
+    });
+  };
+}
     function guardar(item, checked) {
       const tx = db.transaction("items", "readwrite");
       const store = tx.objectStore("items");
