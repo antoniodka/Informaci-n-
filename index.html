@@ -1,290 +1,153 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checklist Doble Columna</title>
+  <title>Lista de Materiales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f4f8;
-      padding: 10px;
+      font-family: sans-serif;
+      background: #f4f4f4;
       margin: 0;
+      padding: 1em;
     }
-
-#contenedor > div.separador {
-  grid-column: 1 / -1;
-  height: 30px;
-}
     h2 {
-      text-align: center;
-      color: #003366;
+      background: #222;
+      color: #fff;
+      padding: 0.5em;
+      border-radius: 8px;
+      margin-top: 1.5em;
     }
-    #contenedor {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 4px;
+    .bloque {
+      margin-bottom: 1em;
+      padding: 1em;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 5px #ccc;
     }
-    .item {
-      border: 1px solid black;
-      padding: 6px;
-      font-size: 16px;
+    label {
       display: flex;
       align-items: center;
-      word-break: break-word;
+      margin: 0.4em 0;
     }
-    .item:nth-child(4n+1),
-    .item:nth-child(4n+2) {
-      background-color: #ccffcc; /* verde super claro */
+    input[type="checkbox"] {
+      margin-right: 0.8em;
+      transform: scale(1.2);
     }
-    .item:nth-child(4n+3),
-    .item:nth-child(4n+4) {
-      background-color: #cceeff; /* azul super claro */
+    .add-section {
+      margin-top: 1em;
     }
-    input[type="text"] {
-      width: 100%;
-      padding: 8px;
-      margin-top: 10px;
-      box-sizing: border-box;
+    .add-section input {
+      width: 80%;
+      padding: 0.5em;
+      margin-right: 0.5em;
     }
-    .botones {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    button {
-      padding: 10px;
-      background-color: #003366;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-    }
-    button:hover {
-      background-color: #001f4d;
+    .add-section button {
+      padding: 0.5em;
     }
   </style>
 </head>
 <body>
-  <h2>Checklist de Montaje</h2>
-  <div id="contenedor"></div>  <input type="text" id="nuevoItem" placeholder="Agregar nuevo ítem...">
-  <div class="botones">
-    <button onclick="agregarItem()">Agregar</button>
-    <button onclick="reiniciar()">Reiniciar</button>
-  </div>  <script>
-    const lista = `
 
+<h1>📦 Lista de Materiales</h1>
 
+<div id="contenedor"></div>
 
+<div class="add-section">
+  <input type="text" id="nuevoItem" placeholder="Agregar nuevo elemento...">
+  <button onclick="agregarItem()">➕ Agregar</button>
+</div>
 
+<script>
+  const bloques = {
+    "Techo 17x42": [
+      "42 tubos de 6 metros", "16 cerchas V cortas", "16 cerchas V largas", "21 cerchas de 6 metros",
+      "8 guayas de techo 17", "48 auxiliares", "256 tornillos cortos", "96 tornillos para auxiliar",
+      "64 tuercas para carro", "16 diferenciales", "16 platinas delgadas para carros de techo",
+      "7 lonas de 6", "6 pañuelos", "2 tapacerchas (por ahora de 24)", "16 forro blanco para diferenciales",
+      "16 forro de tela para patas", "2 triangulo negro", "16 cerramientos transparentes",
+      "1 tapa de 17 transparente", "16 tabla de proteccion piso 60x60cm", "48 tablitas para auxiliar",
+      "Escalera de aluminio pequeña", "Taladro", "Copa 15", "Copa 11", "Caja de herramientas",
+      "TERMO-LIQUIDO", "Exprimidor-limón", "AMARRES PARA TRIANGULOS Y TAPACERCHAS LATERALES",
+      "16 estacas (llevar porra)", "20 krikas con carros", "Pistola de calor con extensión"
+    ],
+    "Carpa 10x12": [
+      "Área: 120 metros cuadrados", "2 secciones de carpa 10x6", "2 paquetes de cercha de 6 (3Unid.)",
+      "2 paquetes de cercha V (4Unid.)", "2 paquetes de tubitos de 5 (10Unid.)", "4 tubos de 6",
+      "8 patas doble flauta", "2 lonas 10x6", "1 pañuelo", "4 triangulos 10x6",
+      "4 tapas de 10x6 (2 blancas, 2 transparentes)", "4 cerramientos blancos",
+      "2 lamparitas", "2 metalares", "Extensiónes", "1 canalete", "8 estacas (llevar porra)",
+      "8 krikas para asegurar carpa", "16 tornillos para subir nivel",
+      "8 rollitos negros para forrar patas", "Cinta transparente"
+    ],
+    "Carpa 4x4": [
+      "1 paquete de cerchas 4x4 (gruesa)", "1 paquete de araña 4x4 (gruesa)",
+      "1 tubo central para arabe (tipo flauta)", "1 lona 4x4 (revisar que esté en el forro)",
+      "4 patas delgada (de una flauta)", "4 estacas (no olvidar porra)", "4 krikas y carros",
+      "4 tornillos para patas subir nivel"
+    ],
+    "Accesorios": [
+      "Pintura negra", "Brochas", "Rodillos", "Tinner", "Cintas negras", "Bola de licra"
+    ]
+  };
 
+  let db;
 
-__* 4 secciones de techo de 23
-__* 10 patacerchas (6mtr)
-__* 20 unidades de cerchas V(revisar numeros)
-__* 12 cerchas de 6
-__* 32 tubos de 6
-__* 5 guayas gruesas(verif. ganchos ambos lados)
-__* 5 guayas pequeñas
-__* 10 diferenciales
-__* 10 platinas techo 23(delgadas 4 huecos)
-__* 10 krikas y 10 carros
-__* 10 estacas aprox. (NO olvidar PORRA)
-__* 30 auxiliares (verif. izquierdas./derechas)
-2 Auxiliares modificada.
-__* 4 lonas de techo de 23 * 6 ( 8 UNIDADES)( verificar blancas/transparentes)
-__* 2 triangulos (verif. blancas/transparente)
-__* 3 pañuelos de 23(ancho velcro ambos lado)
-__* 2 tapacerchas de 23(ancho velcro un solo lado)
-__* 4 caballetes de 6 metros(velcro ambos lados)
-__* 10 forros de patas negros
-__* 10 forros de diferenciales
-__* 40 tuercas para carro
-__* 160 tornillos cortos de techo
-__* 60 tornillos de auxiliares
-__*  llevar llaves 15, copa 15, taladro, llave 11mm ó 9/16 y llaves 13
-__*  LLEVAR SUFICIENTE AMARRES PARA UNIR TRIANGULO CON GUAYA,
-__ AMARRAR TAPACERCHA LATERALES
-__ 8 CERRAMIENTOS RECOGIDOS,
-__ 1 triángulo.
-__ 1 tapa de 23 completa
-__*   CINTA TRANSPARENTE
-__*   TERMO PARA LIQUIDO
+  const request = indexedDB.open("MaterialesDB", 1);
+  request.onupgradeneeded = function (e) {
+    db = e.target.result;
+    db.createObjectStore("estadoCheckboxes", { keyPath: "clave" });
+  };
+  request.onsuccess = function (e) {
+    db = e.target.result;
+    mostrarCheckboxes();
+  };
 
+  function guardarEstado(clave, estado) {
+    const tx = db.transaction("estadoCheckboxes", "readwrite");
+    const store = tx.objectStore("estadoCheckboxes");
+    store.put({ clave, estado });
+  }
 
-----------
+  function cargarEstado(clave, callback) {
+    const tx = db.transaction("estadoCheckboxes", "readonly");
+    const store = tx.objectStore("estadoCheckboxes");
+    const req = store.get(clave);
+    req.onsuccess = () => callback(req.result?.estado || false);
+  }
 
-
-20 pasamanos.
-2 tablas de 60x60.
-Tarima transparente de 7x8 completa en aluminio.
-Todos los megabares.
-Todas la extensiónes.
-2 metalares.
-
-
-----------
-----------
-
-
-HERRAMIENTAS. 
-Taladro verde con punta
-Pulidora
-Maquina de soldar pequeña.
-Sierra.
-Tabla de más para cortar borde.
-
-4 Rack de puentes
-
-1 Rack de medios puentes.
-1 Rack de puentes mixtos
-1 Rack de medios puentes mixtos.
-12 Medias tablas negras.
-26 Tablas negras
-Acoples de tarima transparente.
-
-19 doble tablas.
-2 tablas negras sin marcos.
-
-12 laterales de 50cm
-
-Arandelas de auxiliares para subir nivel de puente mixto
-
-----------
-----------
-
-Agregado:
-14 laterales de 1m.
-30 flautas de 1m.
-2 pata solas de 1 metro.
-
-2 Escalera de 50cm
-3 pisos negros
-2 telas negras bonitas
-4 telas blancas para borde de pista de baile.
-4 tubos de carpas 10x6
-
-Pintura negra.
-Pintura plateada.
-2 Brochas.
-
-4 llantas de andamio.
-Acople de llantas para el techo.
-
-
-
-
-----------
-
-----------
-
-__ * tarima transparente de 7 X 4 modulos
-__ * 28 acrilicos ó modulos transparente
-__ * 67 laterales de alumino
-__ * 40 patas de aluminio
-__ * 40 flautas de patas de aluminio
-__ * 40 niveladores
-__ *  4 sacos de tablitas
-__ * 40 acoples totales( 18 centrales, 18 laterales, 4 esquineros)
-__ * 14 megabares
-__ * 14 cables AC
-__ * extensiones
-
-
-----------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-`.split(/\n+/);
-
-    const dbName = "ChecklistDB2";
-    let db;
-
-    const request = indexedDB.open(dbName, 1);
-    request.onupgradeneeded = function(e) {
-      db = e.target.result;
-      db.createObjectStore("items", { keyPath: "item" });
-    };
-    request.onsuccess = function(e) {
-      db = e.target.result;
-      renderItems();
-    };
-
-    function renderItems() {
-  const tx = db.transaction("items", "readonly");
-  const store = tx.objectStore("items");
-  const getAll = store.getAll();
-  getAll.onsuccess = function () {
-    const guardados = getAll.result.map(obj => obj.item);
-    const completados = getAll.result.filter(obj => obj.checked).map(obj => obj.item);
-    const items = [...new Set([...lista, ...guardados])];
-
+  function mostrarCheckboxes() {
     const contenedor = document.getElementById("contenedor");
     contenedor.innerHTML = "";
-
-    items.forEach((item) => {
-      const texto = item.trim();
-      if (!texto) return;
-
-      if (texto === "----------") {
-        const separador = document.createElement("div");
-        separador.className = "separador";
-        contenedor.appendChild(separador);
-        return;
-      }
-
-      const div = document.createElement("label");
-      div.className = "item";
-      const chk = document.createElement("input");
-      chk.type = "checkbox";
-      chk.checked = completados.includes(item);
-      chk.onchange = () => guardar(item, chk.checked);
-      div.appendChild(chk);
-      div.append(" " + item);
+    for (const bloque in bloques) {
+      const div = document.createElement("div");
+      div.className = "bloque";
+      const titulo = document.createElement("h2");
+      titulo.textContent = bloque;
+      div.appendChild(titulo);
+      bloques[bloque].forEach(item => {
+        const clave = `${bloque}-${item}`;
+        const label = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        cargarEstado(clave, estado => checkbox.checked = estado);
+        checkbox.addEventListener("change", () => guardarEstado(clave, checkbox.checked));
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(item));
+        div.appendChild(label);
+      });
       contenedor.appendChild(div);
-    });
-  };
-}
-    function guardar(item, checked) {
-      const tx = db.transaction("items", "readwrite");
-      const store = tx.objectStore("items");
-      store.put({ item, checked });
     }
+  }
 
-    function agregarItem() {
-      const input = document.getElementById("nuevoItem");
-      const valor = input.value.trim();
-      if (!valor) return;
-      guardar(valor, false);
-      input.value = "";
-      renderItems();
-    }
+  function agregarItem() {
+    const nuevo = document.getElementById("nuevoItem").value.trim();
+    if (!nuevo) return;
+    bloques["Accesorios"].push(nuevo);
+    mostrarCheckboxes();
+    document.getElementById("nuevoItem").value = "";
+  }
+</script>
 
-    function reiniciar() {
-      const clave = prompt("Ingrese la clave para borrar los datos agregados:");
-      if (clave === "borrar") {
-        const tx = db.transaction("items", "readwrite");
-        const store = tx.objectStore("items");
-        const clearReq = store.clear();
-        clearReq.onsuccess = () => renderItems();
-      } else {
-        alert("Clave incorrecta.");
-      }
-    }
-  </script></body>
+</body>
 </html>
