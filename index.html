@@ -1,153 +1,202 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Lista de Materiales</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f4f4f4;
-      margin: 0;
-      padding: 1em;
-    }
-    h2 {
-      background: #222;
-      color: #fff;
-      padding: 0.5em;
-      border-radius: 8px;
-      margin-top: 1.5em;
-    }
-    .bloque {
-      margin-bottom: 1em;
-      padding: 1em;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 0 5px #ccc;
-    }
-    label {
-      display: flex;
-      align-items: center;
-      margin: 0.4em 0;
-    }
-    input[type="checkbox"] {
-      margin-right: 0.8em;
-      transform: scale(1.2);
-    }
-    .add-section {
-      margin-top: 1em;
-    }
-    .add-section input {
-      width: 80%;
-      padding: 0.5em;
-      margin-right: 0.5em;
-    }
-    .add-section button {
-      padding: 0.5em;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piso Layer Web</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; }
+  .container { padding:16px; max-width:800px; margin:auto; }
+  h2 { text-align:center; }
+  .inputs { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  input {
+    flex:1;
+    min-width:120px;
+    padding:12px;
+    font-size:18px;
+    border:1px solid #aaa;
+    border-radius:6px;
+  }
+  button {
+    padding:14px;
+    font-size:18px;
+    margin-top:8px;
+    width:100%;
+    background:#1976d2;
+    color:#fff;
+    border:none;
+    border-radius:6px;
+  }
+  button:hover { background:#125a9c; cursor:pointer; }
+  #resultado {
+    margin-top:12px;
+    padding:12px;
+    background:#ddd;
+    white-space:pre-wrap;
+    font-size:16px;
+    border-radius:6px;
+  }
+  canvas {
+    margin-top:16px;
+    background:#eee;
+    width:100%;
+    height:auto;
+    aspect-ratio: 4/2; /* relación inicial del canvas */
+    display:block;
+    border:1px solid #ccc;
+    border-radius:6px;
+    touch-action: manipulation; /* mejor en móviles */
+  }
+</style>
 </head>
 <body>
-
-<h1>📦 Lista de Materiales</h1>
-
-<div id="contenedor"></div>
-
-<div class="add-section">
-  <input type="text" id="nuevoItem" placeholder="Agregar nuevo elemento...">
-  <button onclick="agregarItem()">➕ Agregar</button>
+<div class="container">
+  <h2>Piso Layer</h2>
+  <div class="inputs">
+    <input type="number" step="0.01" id="ancho" placeholder="Ancho (m)">
+    <input type="number" step="0.01" id="fondo" placeholder="Fondo (m)">
+  </div>
+  <button onclick="calcular()">Calcular</button>
+  <div id="resultado">Resultado..</div>
+  <canvas id="pisoCanvas"></canvas>
 </div>
 
 <script>
-  const bloques = {
-    "Techo 17x42": [ "16 patacerchas",
-      "42 tubos de 6 metros", "16 cerchas V cortas", "16 cerchas V largas", "21 cerchas de 6 metros",
-      "8 guayas de techo 17", "48 auxiliares", "256 tornillos cortos", "96 tornillos para auxiliar",
-      "64 tuercas para carro", "16 diferenciales", "16 platinas delgadas para carros de techo",
-      "7 lonas de 6", "6 pañuelos", "2 tapacerchas (por ahora de 24)", "16 forro blanco para diferenciales",
-      "16 forro de tela para patas", "2 triangulo negro", "16 cerramientos transparentes",
-      "1 tapa de 17 transparente", "16 tabla de proteccion piso 60x60cm", "48 tablitas para auxiliar",
-      "Escalera de aluminio pequeña", "Taladro", "Copa 15", "Copa 11", "Caja de herramientas",
-      "TERMO-LIQUIDO", "Exprimidor-limón", "AMARRES PARA TRIANGULOS Y TAPACERCHAS LATERALES",
-      "16 estacas (llevar porra)", "20 krikas con carros", "Pistola de calor con extensión"
-    ],
-    "Carpa 10x12": [
-      "Área: 120 metros cuadrados", "2 secciones de carpa 10x6", "2 paquetes de cercha de 6 (3Unid.)",
-      "2 paquetes de cercha V (4Unid.)", "2 paquetes de tubitos de 5 (10Unid.)", "4 tubos de 6",
-      "8 patas doble flauta", "2 lonas 10x6", "1 pañuelo", "4 triangulos 10x6",
-      "4 tapas de 10x6 (2 blancas, 2 transparentes)", "4 cerramientos blancos",
-      "2 lamparitas", "2 metalares", "Extensiónes", "1 canalete", "8 estacas (llevar porra)",
-      "8 krikas para asegurar carpa", "16 tornillos para subir nivel",
-      "8 rollitos negros para forrar patas", "Cinta transparente"
-    ],
-    "Carpa 4x4": [
-      "1 paquete de cerchas 4x4 (gruesa)", "1 paquete de araña 4x4 (gruesa)",
-      "1 tubo central para arabe (tipo flauta)", "1 lona 4x4 (revisar que esté en el forro)",
-      "4 patas delgada (de una flauta)", "4 estacas (no olvidar porra)", "4 krikas y carros",
-      "4 tornillos para patas subir nivel"
-    ],
-    "Accesorios": [
-      "Pintura negra", "Brochas", "Rodillos", "Tinner", "Cintas negras", "Bola de licra"
-    ]
-  };
+const CELL = 0.60;
+let piezas = [], cols=1, rows=1, remX=0, remY=0;
+let showBadge = true, badgeRect=null;
 
-  let db;
+const PIECES = [
+  {key:"layer_0",    label:"Layer 2.40×1.20",   w:4, h:2, color:"red"},
+  {key:"layer_90",   label:"Layer 2.40×1.20",   w:2, h:4, color:"red"},
+  {key:"cuadrado",   label:"Cuadrado 1.20×1.20",w:2, h:2, color:"blue"},
+  {key:"mediaL_0",   label:"Media larga 2.40×0.60",w:4,h:1,color:"green"},
+  {key:"mediaL_90",  label:"Media larga 2.40×0.60",w:1,h:4,color:"green"},
+  {key:"mediaC_0",   label:"Media corta 1.20×0.60",w:2,h:1,color:"orange"},
+  {key:"mediaC_90",  label:"Media corta 1.20×0.60",w:1,h:2,color:"orange"},
+  {key:"cuadrito",   label:"Cuadrito 0.60×0.60", w:1,h:1,color:"gray"}
+];
 
-  const request = indexedDB.open("MaterialesDB", 1);
-  request.onupgradeneeded = function (e) {
-    db = e.target.result;
-    db.createObjectStore("estadoCheckboxes", { keyPath: "clave" });
-  };
-  request.onsuccess = function (e) {
-    db = e.target.result;
-    mostrarCheckboxes();
-  };
-
-  function guardarEstado(clave, estado) {
-    const tx = db.transaction("estadoCheckboxes", "readwrite");
-    const store = tx.objectStore("estadoCheckboxes");
-    store.put({ clave, estado });
+function calcular(){
+  const ancho=parseFloat(document.getElementById("ancho").value);
+  const fondo=parseFloat(document.getElementById("fondo").value);
+  if(isNaN(ancho)||isNaN(fondo)||ancho<=0||fondo<=0){
+    document.getElementById("resultado").innerText="Ingresa medidas válidas.";
+    piezas=[]; dibujar(); return;
   }
+  cols=Math.floor(ancho/CELL);
+  rows=Math.floor(fondo/CELL);
+  remX=ancho-cols*CELL;
+  remY=fondo-rows*CELL;
 
-  function cargarEstado(clave, callback) {
-    const tx = db.transaction("estadoCheckboxes", "readonly");
-    const store = tx.objectStore("estadoCheckboxes");
-    const req = store.get(clave);
-    req.onsuccess = () => callback(req.result?.estado || false);
-  }
+  let occ=Array.from({length:cols},()=>Array(rows).fill(false));
+  piezas=[];
+  let counts={};
 
-  function mostrarCheckboxes() {
-    const contenedor = document.getElementById("contenedor");
-    contenedor.innerHTML = "";
-    for (const bloque in bloques) {
-      const div = document.createElement("div");
-      div.className = "bloque";
-      const titulo = document.createElement("h2");
-      titulo.textContent = bloque;
-      div.appendChild(titulo);
-      bloques[bloque].forEach(item => {
-        const clave = `${bloque}-${item}`;
-        const label = document.createElement("label");
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        cargarEstado(clave, estado => checkbox.checked = estado);
-        checkbox.addEventListener("change", () => guardarEstado(clave, checkbox.checked));
-        label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(item));
-        div.appendChild(label);
-      });
-      contenedor.appendChild(div);
+  for(let j=0;j<rows;j++){
+    for(let i=0;i<cols;i++){
+      if(occ[i][j]) continue;
+      for(const p of PIECES){
+        if(fits(occ,cols,rows,i,j,p.w,p.h)){
+          place(occ,i,j,p.w,p.h);
+          piezas.push({key:p.key,i,j,w:p.w,h:p.h,color:p.color});
+          counts[p.label]=(counts[p.label]||0)+1;
+          break;
+        }
+      }
     }
   }
 
-  function agregarItem() {
-    const nuevo = document.getElementById("nuevoItem").value.trim();
-    if (!nuevo) return;
-    bloques["Accesorios"].push(nuevo);
-    mostrarCheckboxes();
-    document.getElementById("nuevoItem").value = "";
+  let usadoX=cols*CELL, usadoY=rows*CELL;
+  let texto=`Área ingresada: ${ancho.toFixed(2)} m × ${fondo.toFixed(2)} m\nMaterial:\n`;
+  for(const [k,v] of Object.entries(counts)){
+    texto+=`• ${k}: ${v}\n`;
   }
-</script>
+  texto+=`\nBordes:\n• Laterales: ${(remX*100).toFixed(1)} cm\n• Frente/fondo: ${(remY*100).toFixed(1)} cm\n`;
+  texto+=`\nDimensiones cubiertas: ${usadoX.toFixed(2)} × ${usadoY.toFixed(2)} m\nÁrea cubierta: ${(usadoX*usadoY).toFixed(2)} m²`;
+  document.getElementById("resultado").innerText=texto;
 
+  showBadge=true;
+  dibujar();
+}
+
+function fits(occ,cols,rows,i,j,w,h){
+  if(i+w>cols||j+h>rows) return false;
+  for(let x=i;x<i+w;x++)for(let y=j;y<j+h;y++)if(occ[x][y])return false;
+  return true;
+}
+function place(occ,i,j,w,h){
+  for(let x=i;x<i+w;x++)for(let y=j;y<j+h;y++)occ[x][y]=true;
+}
+
+function lighten(color, factor=0.7){
+  let ctx=document.createElement("canvas").getContext("2d");
+  ctx.fillStyle=color; let rgb=ctx.fillStyle;
+  let m=/^rgb\\((\\d+), (\\d+), (\\d+)\\)$/.exec(rgb.replace(/ /g,""));
+  if(!m) return color;
+  let r=parseInt(m[1]), g=parseInt(m[2]), b=parseInt(m[3]);
+  r=r+(255-r)*factor; g=g+(255-g)*factor; b=b+(255-b)*factor;
+  return `rgb(${r},${g},${b})`;
+}
+
+function dibujar(){
+  const canvas=document.getElementById("pisoCanvas");
+  const ctx=canvas.getContext("2d");
+  const W=canvas.width=canvas.clientWidth;
+  const H=canvas.height=canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);
+
+  const marginTop=50, marginLeft=50, marginRight=50, marginBottom=50;
+  const gridW=W-marginLeft-marginRight, gridH=H-marginTop-marginBottom;
+  const cellSize=Math.min(gridW/cols, gridH/rows);
+  const usedW=cols*cellSize, usedH=rows*cellSize;
+  const originX=marginLeft+(gridW-usedW)/2, originY=marginTop;
+
+  for(const c of piezas){
+    let x=originX+c.i*cellSize, y=originY+c.j*cellSize;
+    let w=c.w*cellSize, h=c.h*cellSize;
+    ctx.fillStyle=lighten(c.color,0.7);
+    ctx.fillRect(x,y,w,h);
+    ctx.strokeStyle="#000"; ctx.lineWidth=1.5;
+    ctx.strokeRect(x,y,w,h);
+  }
+
+  ctx.strokeStyle="#000"; ctx.lineWidth=2;
+  ctx.strokeRect(originX,originY,usedW,usedH);
+
+  ctx.fillStyle="#000"; ctx.font=Math.max(14, H*0.03)+"px Arial"; ctx.textAlign="center";
+  ctx.fillText((cols*CELL).toFixed(2)+" m", originX+usedW/2, originY-10);
+  ctx.save(); ctx.translate(originX-20, originY+usedH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText((rows*CELL).toFixed(2)+" m",0,0);
+  ctx.restore();
+
+  badgeRect=null;
+  if(showBadge&&(remX>0.001||remY>0.001)){
+    const text1=`Laterales: ${(remX*100).toFixed(1)} cm`;
+    const text2=`Frente/fondo: ${(remY*100).toFixed(1)} cm`;
+    ctx.font=Math.max(13, H*0.025)+"px Arial";
+    const textW=Math.max(ctx.measureText(text1).width,ctx.measureText(text2).width);
+    const pad=8, bw=textW+pad*2, bh=50;
+    const bx=originX+usedW-bw-10, by=originY+usedH-bh-10;
+    ctx.fillStyle="rgba(255,255,255,0.9)";
+    ctx.strokeStyle="#666"; ctx.lineWidth=1;
+    ctx.fillRect(bx,by,bw,bh); ctx.strokeRect(bx,by,bw,bh);
+    ctx.fillStyle="#000"; ctx.textAlign="center";
+    ctx.fillText(text1,bx+bw/2,by+20);
+    ctx.fillText(text2,bx+bw/2,by+40);
+    badgeRect={x:bx,y:by,w:bw,h:bh};
+  }
+}
+
+document.getElementById("pisoCanvas").addEventListener("click", e=>{
+  if(!badgeRect) return;
+  const rect=e.target.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  if(x>=badgeRect.x&&x<=badgeRect.x+badgeRect.w&&y>=badgeRect.y&&y<=badgeRect.y+badgeRect.h){
+    showBadge=false; dibujar();
+  }
+});
+</script>
 </body>
 </html>
