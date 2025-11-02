@@ -108,11 +108,18 @@ function calcular(){
   }
 
   let usadoX=cols*CELL, usadoY=rows*CELL;
+
+  // ---- Texto de bordes con valor y mitad "de separación en cada lado" ----
+  const lateralCm = remX*100;
+  const frenteCm  = remY*100;
+  const lateralesTexto = `${lateralCm.toFixed(1)} cm (${(lateralCm/2).toFixed(1)} cm de separación en cada lado)`;
+  const frenteTexto    = `${frenteCm.toFixed(1)} cm (${(frenteCm/2).toFixed(1)} cm de separación en cada lado)`;
+
   let texto=`Área ingresada: ${ancho.toFixed(2)} m × ${fondo.toFixed(2)} m\nMaterial:\n`;
   for(const [k,v] of Object.entries(counts)){
     texto+=`• ${k}: ${v}\n`;
   }
-  texto+=`\nBordes:\n• Laterales: ${(remX*100).toFixed(1)} cm\n• Frente/fondo: ${(remY*100).toFixed(1)} cm\n`;
+  texto+=`\nBordes:\n• Laterales: ${lateralesTexto}\n• Frente/fondo: ${frenteTexto}\n`;
   texto+=`\nDimensiones cubiertas: ${usadoX.toFixed(2)} × ${usadoY.toFixed(2)} m\nÁrea cubierta: ${(usadoX*usadoY).toFixed(2)} m²`;
   document.getElementById("resultado").innerText=texto;
 
@@ -132,7 +139,7 @@ function place(occ,i,j,w,h){
 function lighten(color, factor=0.7){
   let ctx=document.createElement("canvas").getContext("2d");
   ctx.fillStyle=color; let rgb=ctx.fillStyle;
-  let m=/^rgb\\((\\d+), (\\d+), (\\d+)\\)$/.exec(rgb.replace(/ /g,""));
+  let m=/^rgb\((\d+), (\d+), (\d+)\)$/.exec(rgb.replace(/ /g,""));
   if(!m) return color;
   let r=parseInt(m[1]), g=parseInt(m[2]), b=parseInt(m[3]);
   r=r+(255-r)*factor; g=g+(255-g)*factor; b=b+(255-b)*factor;
@@ -173,18 +180,22 @@ function dibujar(){
 
   badgeRect=null;
   if(showBadge&&(remX>0.001||remY>0.001)){
-    const text1=`Laterales: ${(remX*100).toFixed(1)} cm`;
-    const text2=`Frente/fondo: ${(remY*100).toFixed(1)} cm`;
+    // ---- Badge con valor y mitad "de separación en cada lado" ----
+    const lateralCm = remX*100;
+    const frenteCm  = remY*100;
+    const text1=`Laterales: ${lateralCm.toFixed(1)} cm (${(lateralCm/2).toFixed(1)} cm de separación en cada lado)`;
+    const text2=`Frente/fondo: ${frenteCm.toFixed(1)} cm (${(frenteCm/2).toFixed(1)} cm de separación en cada lado)`;
+
     ctx.font=Math.max(13, H*0.025)+"px Arial";
     const textW=Math.max(ctx.measureText(text1).width,ctx.measureText(text2).width);
-    const pad=8, bw=textW+pad*2, bh=50;
+    const pad=8, bw=textW+pad*2, bh=56;
     const bx=originX+usedW-bw-10, by=originY+usedH-bh-10;
     ctx.fillStyle="rgba(255,255,255,0.9)";
     ctx.strokeStyle="#666"; ctx.lineWidth=1;
     ctx.fillRect(bx,by,bw,bh); ctx.strokeRect(bx,by,bw,bh);
     ctx.fillStyle="#000"; ctx.textAlign="center";
-    ctx.fillText(text1,bx+bw/2,by+20);
-    ctx.fillText(text2,bx+bw/2,by+40);
+    ctx.fillText(text1,bx+bw/2,by+22);
+    ctx.fillText(text2,bx+bw/2,by+44);
     badgeRect={x:bx,y:by,w:bw,h:bh};
   }
 }
