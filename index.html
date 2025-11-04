@@ -3,26 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Piso Layer Web</title>
+<title>Piso Layer Web + Mapa de Alturas</title>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; }
-  .container { padding:16px; max-width:800px; margin:auto; }
-  h2 { text-align:center; }
-  .inputs { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  :root{
+    --azul:#1976d2;
+    --bg:#f5f5f5;
+    --panel:#eee;
+    --borde:#ccc;
+  }
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:var(--bg); }
+  .container { padding:16px; max-width:900px; margin:auto; }
+  h2 { text-align:center; margin: 6px 0 10px; }
+  .inputs { display:grid; grid-template-columns: repeat(2, minmax(160px,1fr)); gap:12px; margin-bottom:12px; }
+  .inputs-2 { display:grid; grid-template-columns: repeat(4, minmax(120px,1fr)); gap:12px; margin-bottom:12px; }
+  label { font-size:13px; color:#333; display:block; margin-bottom:4px; }
   input {
-    flex:1;
-    min-width:120px;
+    width:100%;
     padding:12px;
-    font-size:18px;
+    font-size:16px;
     border:1px solid #aaa;
     border-radius:6px;
+    background:#fff;
   }
   button {
     padding:14px;
     font-size:18px;
     margin-top:8px;
     width:100%;
-    background:#1976d2;
+    background:var(--azul);
     color:#fff;
     border:none;
     border-radius:6px;
@@ -36,53 +44,120 @@
     font-size:16px;
     border-radius:6px;
   }
-  canvas {
+  .canvas-wrap{
     margin-top:16px;
-    background:#eee;
+    background:var(--panel);
+    border:1px solid var(--borde);
+    border-radius:6px;
+    padding:8px;
+  }
+  canvas {
     width:100%;
     height:auto;
     aspect-ratio: 4/2;
-    display:block;
-    border:1px solid #ccc;
+    background:#fafafa;
     border-radius:6px;
+    display:block;
     touch-action: manipulation;
+  }
+  .legend{
+    display:flex; align-items:center; gap:12px; margin:10px 0 2px;
+    font-size:12px; color:#333; flex-wrap:wrap;
+  }
+  .bar{
+    height:12px; width:200px; border-radius:6px; border:1px solid #999;
+    background: linear-gradient(90deg, #0000ff, #00ffff, #00ff00, #ffff00, #ff7f00, #ff0000);
+  }
+  .subtitle{
+    font-weight:bold; margin:8px 0 4px; font-size:14px; color:#444;
   }
 </style>
 </head>
 <body>
 <div class="container">
   <h2>Piso Layer</h2>
+
   <div class="inputs">
-    <input type="number" step="0.01" id="ancho" placeholder="Ancho (m)">
-    <input type="number" step="0.01" id="fondo" placeholder="Fondo (m)">
+    <div>
+      <label for="ancho">Ancho (m)</label>
+      <input type="number" step="0.01" id="ancho" placeholder="Ej. 4.80">
+    </div>
+    <div>
+      <label for="fondo">Fondo (m)</label>
+      <input type="number" step="0.01" id="fondo" placeholder="Ej. 3.60">
+    </div>
   </div>
+
+  <div class="subtitle">Alturas en las 4 esquinas (para el mapa de alturas):</div>
+  <div class="inputs-2">
+    <div>
+      <label for="hTL">Altura sup. izquierda (H₁)</label>
+      <input type="number" step="0.01" id="hTL" placeholder="H1 (ej. 0.00)">
+    </div>
+    <div>
+      <label for="hTR">Altura sup. derecha (H₂)</label>
+      <input type="number" step="0.01" id="hTR" placeholder="H2">
+    </div>
+    <div>
+      <label for="hBL">Altura inf. izquierda (H₃)</label>
+      <input type="number" step="0.01" id="hBL" placeholder="H3">
+    </div>
+    <div>
+      <label for="hBR">Altura inf. derecha (H₄)</label>
+      <input type="number" step="0.01" id="hBR" placeholder="H4">
+    </div>
+  </div>
+
   <button onclick="calcular()">Calcular</button>
   <div id="resultado">Resultado..</div>
-  <canvas id="pisoCanvas"></canvas>
+
+  <div class="canvas-wrap">
+    <div class="subtitle">Diseño de piezas</div>
+    <canvas id="pisoCanvas"></canvas>
+  </div>
+
+  <div class="canvas-wrap">
+    <div class="subtitle">Mapa de alturas (solo en esquinas de los rectángulos de arriba)</div>
+    <canvas id="mapaCanvas"></canvas>
+
+    <div class="legend">
+      <span>Alturas mín ↔ máx</span>
+      <div class="bar"></div>
+      <span id="minMaxLabel">—</span>
+    </div>
+  </div>
 </div>
 
 <script>
-const CELL = 0.60;
+/* =================== PARÁMETROS BÁSICOS =================== */
+const CELL = 0.60; // tamaño del módulo en metros
 let piezas = [], cols=1, rows=1, remX=0, remY=0;
 let showBadge = true, badgeRect=null;
 
 const PIECES = [
-  {key:"layer_0", label:"Layer 2.40×1.20", w:4, h:2, color:"red"},
-  {key:"layer_90", label:"Layer 2.40×1.20", w:2, h:4, color:"red"},
-  {key:"cuadrado", label:"Cuadrado 1.20×1.20", w:2, h:2, color:"blue"},
-  {key:"mediaL_0", label:"Media larga 2.40×0.60", w:4,h:1,color:"green"},
-  {key:"mediaL_90", label:"Media larga 2.40×0.60", w:1,h:4,color:"green"},
-  {key:"mediaC_0", label:"Media corta 1.20×0.60", w:2,h:1,color:"orange"},
-  {key:"mediaC_90", label:"Media corta 1.20×0.60", w:1,h:2,color:"orange"},
-  {key:"cuadrito", label:"Cuadrito 0.60×0.60", w:1,h:1,color:"gray"}
+  {key:"layer_0",   label:"Layer 2.40×1.20",       w:4, h:2, color:"red"},
+  {key:"layer_90",  label:"Layer 2.40×1.20",       w:2, h:4, color:"red"},
+  {key:"cuadrado",  label:"Cuadrado 1.20×1.20",    w:2, h:2, color:"blue"},
+  {key:"mediaL_0",  label:"Media larga 2.40×0.60", w:4, h:1, color:"green"},
+  {key:"mediaL_90", label:"Media larga 2.40×0.60", w:1, h:4, color:"green"},
+  {key:"mediaC_0",  label:"Media corta 1.20×0.60", w:2, h:1, color:"orange"},
+  {key:"mediaC_90", label:"Media corta 1.20×0.60", w:1, h:2, color:"orange"},
+  {key:"cuadrito",  label:"Cuadrito 0.60×0.60",    w:1, h:1, color:"gray"}
 ];
 
+/* ============== CÁLCULO DE PIEZAS Y LAYOUT ============== */
 function calcular(){
   const ancho=parseFloat(document.getElementById("ancho").value);
   const fondo=parseFloat(document.getElementById("fondo").value);
+
+  const hTL = parseFloatOrZero(document.getElementById("hTL").value);
+  const hTR = parseFloatOrZero(document.getElementById("hTR").value);
+  const hBL = parseFloatOrZero(document.getElementById("hBL").value);
+  const hBR = parseFloatOrZero(document.getElementById("hBR").value);
+
   if(isNaN(ancho)||isNaN(fondo)||ancho<=0||fondo<=0){
     document.getElementById("resultado").innerText="Ingresa medidas válidas.";
-    piezas=[]; dibujar(); return;
+    piezas=[]; dibujarPiso(); dibujarMapa({hTL,hTR,hBL,hBR}); return;
   }
 
   cols=Math.floor(ancho/CELL);
@@ -94,6 +169,7 @@ function calcular(){
   piezas=[];
   let counts={};
 
+  // Relleno "codicioso" con la lista PIECES
   for(let j=0;j<rows;j++){
     for(let i=0;i<cols;i++){
       if(occ[i][j]) continue;
@@ -115,15 +191,19 @@ function calcular(){
   const frenteTexto    = `${frenteCm.toFixed(1)} cm (${(frenteCm/2).toFixed(1)} cm × lado)`;
 
   let texto=`Área ingresada: ${ancho.toFixed(2)} m × ${fondo.toFixed(2)} m\nMaterial:\n`;
-  for(const [k,v] of Object.entries(counts)){
-    texto+=`• ${k}: ${v}\n`;
-  }
+  for(const [k,v] of Object.entries(counts)) texto+=`• ${k}: ${v}\n`;
   texto+=`\nBordes:\n• Laterales: ${lateralesTexto}\n• Frente/fondo: ${frenteTexto}\n`;
   texto+=`\nDimensiones cubiertas: ${usadoX.toFixed(2)} × ${usadoY.toFixed(2)} m\nÁrea cubierta: ${(usadoX*usadoY).toFixed(2)} m²`;
   document.getElementById("resultado").innerText=texto;
 
   showBadge=true;
-  dibujar();
+  dibujarPiso();
+  dibujarMapa({hTL,hTR,hBL,hBR}); // segundo dibujo con mapa de alturas
+}
+
+function parseFloatOrZero(v){
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
 }
 
 function fits(occ,cols,rows,i,j,w,h){
@@ -136,28 +216,29 @@ function place(occ,i,j,w,h){
 }
 
 function lighten(color, factor=0.7){
-  let ctx=document.createElement("canvas").getContext("2d");
+  // Convierte a rgb y aclara hacia blanco
+  const ctx=document.createElement("canvas").getContext("2d");
   ctx.fillStyle=color; let rgb=ctx.fillStyle;
-  let m=/^rgb\((\d+), (\d+), (\d+)\)$/.exec(rgb.replace(/ /g,""));
+  let m=/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/.exec(rgb.replace(/ /g,""));
   if(!m) return color;
-  let r=parseInt(m[1]), g=parseInt(m[2]), b=parseInt(m[3]);
+  let r=+m[1], g=+m[2], b=+m[3];
   r=r+(255-r)*factor; g=g+(255-g)*factor; b=b+(255-b)*factor;
-  return `rgb(${r},${g},${b})`;
+  return `rgb(${r|0},${g|0},${b|0})`;
 }
 
-function dibujar(){
+/* =================== DIBUJO 1: PIEZAS =================== */
+function dibujarPiso(){
   const canvas=document.getElementById("pisoCanvas");
   const ctx=canvas.getContext("2d");
   const W=canvas.width=canvas.clientWidth;
   const H=canvas.height=canvas.clientHeight;
   ctx.clearRect(0,0,W,H);
 
-  const marginTop=50, marginLeft=50, marginRight=50, marginBottom=50;
-  const gridW=W-marginLeft-marginRight, gridH=H-marginTop-marginBottom;
-  const cellSize=Math.min(gridW/cols, gridH/rows);
-  const usedW=cols*cellSize, usedH=rows*cellSize;
-  const originX=marginLeft+(gridW-usedW)/2, originY=marginTop;
+  if(cols<1||rows<1){ return; }
 
+  const {originX, originY, usedW, usedH, cellSize} = layout(W,H);
+
+  // piezas
   for(const c of piezas){
     let x=originX+c.i*cellSize, y=originY+c.j*cellSize;
     let w=c.w*cellSize, h=c.h*cellSize;
@@ -167,9 +248,11 @@ function dibujar(){
     ctx.strokeRect(x,y,w,h);
   }
 
+  // marco general
   ctx.strokeStyle="#000"; ctx.lineWidth=2;
   ctx.strokeRect(originX,originY,usedW,usedH);
 
+  // cotas
   ctx.fillStyle="#000"; ctx.font=Math.max(14, H*0.03)+"px Arial"; ctx.textAlign="center";
   ctx.fillText((cols*CELL).toFixed(2)+" m", originX+usedW/2, originY-10);
   ctx.save(); ctx.translate(originX-20, originY+usedH/2);
@@ -177,6 +260,7 @@ function dibujar(){
   ctx.fillText((rows*CELL).toFixed(2)+" m",0,0);
   ctx.restore();
 
+  // badge de bordes sobrantes
   badgeRect=null;
   if(showBadge&&(remX>0.001||remY>0.001)){
     const lateralCm = remX*100;
@@ -203,9 +287,179 @@ document.getElementById("pisoCanvas").addEventListener("click", e=>{
   const rect=e.target.getBoundingClientRect();
   const x=e.clientX-rect.left, y=e.clientY-rect.top;
   if(x>=badgeRect.x&&x<=badgeRect.x+badgeRect.w&&y>=badgeRect.y&&y<=badgeRect.y+badgeRect.h){
-    showBadge=false; dibujar();
+    showBadge=false; dibujarPiso();
   }
 });
+
+/* ============== DIBUJO 2: MAPA DE ALTURAS ============== */
+function dibujarMapa({hTL,hTR,hBL,hBR}){
+  const canvas=document.getElementById("mapaCanvas");
+  const ctx=canvas.getContext("2d");
+  const W=canvas.width=canvas.clientWidth;
+  const H=canvas.height=canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);
+
+  if(cols<1||rows<1){ document.getElementById('minMaxLabel').textContent='—'; return; }
+
+  const {originX, originY, usedW, usedH, cellSize} = layout(W,H);
+
+  /* 1) Dibujo base: MISMAS PIEZAS con opacidad baja (fantasma) */
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  for(const c of piezas){
+    let x=originX+c.i*cellSize, y=originY+c.j*cellSize;
+    let w=c.w*cellSize, h=c.h*cellSize;
+    ctx.fillStyle="#777";
+    ctx.fillRect(x,y,w,h);
+    ctx.strokeStyle="#000"; ctx.lineWidth=1;
+    ctx.strokeRect(x,y,w,h);
+  }
+  ctx.restore();
+
+  /* 2) Heatmap por celda (SIN NÚMEROS EN LAS CELDAS) */
+  // Para colorear necesitamos min/max de alturas (en centros de celda o vértices).
+  // Usaremos centros de celda para rango visual (sin texto).
+  let minH=Infinity, maxH=-Infinity;
+  for(let j=0;j<rows;j++){
+    for(let i=0;i<cols;i++){
+      const tx = (i + 0.5) / cols;
+      const ty = (j + 0.5) / rows;
+      const h = bilinear(hTL,hTR,hBL,hBR, tx, ty);
+      if(h<minH) minH=h;
+      if(h>maxH) maxH=h;
+    }
+  }
+  for(let j=0;j<rows;j++){
+    for(let i=0;i<cols;i++){
+      const tx = (i + 0.5) / cols;
+      const ty = (j + 0.5) / rows;
+      const hVal = bilinear(hTL,hTR,hBL,hBR, tx, ty);
+      const color = heatColor(hVal, minH, maxH);
+      const x=originX+i*cellSize;
+      const y=originY+j*cellSize;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.55;
+      ctx.fillRect(x,y,cellSize,cellSize);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle="rgba(0,0,0,0.12)";
+      ctx.lineWidth=1;
+      ctx.strokeRect(x,y,cellSize,cellSize);
+    }
+  }
+
+  /* 3) PUNTOS Y NÚMEROS SOLO EN ESQUINAS DE LOS RECTÁNGULOS DE ARRIBA */
+  const cornerGridPoints = getUniqueCornerPointsFromPieces(); // en coordenadas de grilla (i,j)
+  ctx.fillStyle="#111";
+  ctx.font=Math.max(12, H*0.03)+"px Arial";
+  ctx.textAlign="left"; ctx.textBaseline="middle";
+
+  for(const {gx, gy} of cornerGridPoints){
+    // posición en pixeles
+    const px = originX + gx*cellSize;
+    const py = originY + gy*cellSize;
+
+    // altura en ese punto (usar tx,ty en [0,1] con borde incluido)
+    const tx = gx / cols;
+    const ty = gy / rows;
+    const hPoint = bilinear(hTL,hTR,hBL,hBR, tx, ty);
+
+    // dibujar punto y etiqueta
+    drawMarker(ctx, px, py);
+    const offset = 6; // espacio para el texto
+    ctx.fillStyle="#111";
+    ctx.fillText(formatH(hPoint), px + offset + 6, py);
+  }
+
+  /* 4) marco general y cotas */
+  ctx.strokeStyle="#000"; ctx.lineWidth=2;
+  ctx.strokeRect(originX,originY,usedW,usedH);
+
+  ctx.fillStyle="#000"; ctx.font=Math.max(14, H*0.03)+"px Arial"; ctx.textAlign="center";
+  ctx.fillText((cols*CELL).toFixed(2)+" m", originX+usedW/2, originY-10);
+  ctx.save(); ctx.translate(originX-20, originY+usedH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText((rows*CELL).toFixed(2)+" m",0,0);
+  ctx.restore();
+
+  /* 5) leyenda min/max */
+  const mm = (isFinite(minH)&&isFinite(maxH)) ? `min: ${formatH(minH)}  |  max: ${formatH(maxH)}` : '—';
+  document.getElementById('minMaxLabel').textContent = mm;
+}
+
+/* =============== ESQUINAS ÚNICAS DE PIEZAS =============== */
+function getUniqueCornerPointsFromPieces(){
+  // devuelve puntos de grilla {gx, gy} únicos (0..cols, 0..rows)
+  const set = new Set();
+  for(const p of piezas){
+    // cada pieza ocupa [i .. i+w] × [j .. j+h] en grilla
+    const xs = [p.i, p.i + p.w];
+    const ys = [p.j, p.j + p.h];
+    for(const gx of xs){
+      for(const gy of ys){
+        // guardamos con clave string única
+        const key = `${gx}|${gy}`;
+        set.add(key);
+      }
+    }
+  }
+  // Convertir a objetos y ordenar opcionalmente
+  return Array.from(set).map(k=>{
+    const [gx,gy]=k.split("|").map(Number);
+    return {gx,gy};
+  });
+}
+
+function drawMarker(ctx, x, y){
+  // marcador circular con borde para visibilidad
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 4.5, 0, Math.PI*2);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#111";
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ================== AUXILIARES DE DIBUJO ================== */
+function layout(W,H){
+  const marginTop=50, marginLeft=50, marginRight=50, marginBottom=50;
+  const gridW=W-marginLeft-marginRight, gridH=H-marginTop-marginBottom;
+  const cellSize=Math.min(gridW/cols, gridH/rows);
+  const usedW=cols*cellSize, usedH=rows*cellSize;
+  const originX=marginLeft+(gridW-usedW)/2, originY=marginTop;
+  return {originX, originY, usedW, usedH, cellSize};
+}
+
+/* ============== INTERPOLACIÓN Y COLOR HEATMAP ============== */
+function bilinear(hTL,hTR,hBL,hBR, tx, ty){
+  // tx: 0..1 izquierda->derecha, ty: 0..1 arriba->abajo
+  // f(x,y) = (1-tx)(1-ty)hTL + tx(1-ty)hTR + (1-tx)ty hBL + tx ty hBR
+  const a = (1-tx)*(1-ty)*hTL;
+  const b = tx*(1-ty)*hTR;
+  const c = (1-tx)*ty*hBL;
+  const d = tx*ty*hBR;
+  return a+b+c+d;
+}
+function formatH(h){ return h.toFixed(2); }
+function heatColor(v, vmin, vmax){
+  if(!isFinite(vmin) || !isFinite(vmax) || vmin===vmax) return "rgba(128,128,128,1)";
+  const t = clamp((v - vmin)/(vmax - vmin), 0, 1);
+  const stops = [
+    {t:0.00, c:[0,0,255]}, {t:0.20, c:[0,255,255]}, {t:0.40, c:[0,255,0]},
+    {t:0.60, c:[255,255,0]}, {t:0.80, c:[255,127,0]}, {t:1.00, c:[255,0,0]}
+  ];
+  let i=0; while(i<stops.length-1 && t>stops[i+1].t) i++;
+  const s0=stops[i], s1=stops[i+1];
+  const lt = (t - s0.t) / (s1.t - s0.t);
+  const r = Math.round(lerp(s0.c[0], s1.c[0], lt));
+  const g = Math.round(lerp(s0.c[1], s1.c[1], lt));
+  const b = Math.round(lerp(s0.c[2], s1.c[2], lt));
+  return `rgb(${r},${g},${b})`;
+}
+function lerp(a,b,t){ return a + (b-a)*t; }
+function clamp(x,min,max){ return x<min?min:(x>max?max:x); }
 </script>
 </body>
 </html>
